@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.13.0/beautify.js"></script>
+    <script src="script.js"></script>
+</head>
+<body>
+    <h1>Hello World!</h1>
+    <table id = "table" border="1">
+      <tr>
+        <th>Operator</th>
+        <th>Sats Balance</th>
+        <th>Registration Date</th>
+        <th>Deregistration Date</th>
+      </tr>
+    </table>
+    <pre><code class="language-json" id="code"></code></pre>
+    <script>
+        (async function () {
+          const data = JSON.stringify({
+            query: `{
+            darknodes (first: 1000) {
+                operator
+                balanceBTC
+                registeredAt
+                deregisteredAt
+                }  
+            }`,
+          });
+  
+          const response = await fetch(
+            'https://api.thegraph.com/subgraphs/name/renproject/renvm',
+            {
+              method: 'post',
+              body: data,
+              headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': data.length,
+              },
+            }
+          );
+         
+          const output = await response.json();
+          const nodelist = output[Object.keys(output)[0]]
+          const operators = nodelist[Object.keys(nodelist)[0]]
+          
+          //Converts Satoshi to BTC
+          nodelist.darknodes.forEach(darknodes => {
+            darknodes.balanceBTC = darknodes.balanceBTC*0.00000001 + " BTC"; 
+          });
+          
+          //Converts registeredDate to readable format
+          nodelist.darknodes.forEach(darknodes => {
+            darknodes.registeredAt = Date(darknodes.registeredAt); 
+          });
+          
+
+          //Leveraged function in script.js to sort the JSON object
+          nodelist.darknodes = sortByProperty(nodelist.darknodes, 'balanceBTC', -1);
+
+          
+          //Add's records to HTML Table
+          const table = document.getElementById('table')
+          for (const obj of nodelist.darknodes){
+            const row = document.createElement('tr');
+            for(const val of Object.values(obj)){
+              const col = document.createElement('td');
+              col.textContent = val;
+              row.appendChild(col);
+            }
+            table.appendChild(row);
+          }
+
+          //Add raw JSON at the bottom
+          //document.getElementById('code').innerHTML = js_beautify(JSON.stringify(output.data));
+    
+        })();
+      </script>
+</body>
+</html>
